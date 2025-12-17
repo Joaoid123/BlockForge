@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>BlockForge – Studio</title>
+    <link rel="stylesheet" href="/assets/css/theme.css"/>
+    <style>
+      .studio { display:flex; height: calc(100vh - 60px); }
+      .editor { flex: 1; border-right: 1px solid #333; }
+      .preview { flex: 1; background: #111; }
+      .toolbar { padding: 8px; background: #222; border-bottom: 1px solid #333; }
+    </style>
+    <!-- Load Monaco via CDN for simplicity -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+    <script>
+      require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' }});
+    </script>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/home.html">Home</a>
+        <button id="publish">Publish</button>
+        <button id="run">Run</button>
+      </nav>
+    </header>
+
+    <div class="studio">
+      <div id="editor" class="editor"></div>
+      <iframe id="preview" class="preview"></iframe>
+    </div>
+
+    <script type="module">
+      import { requireAuth } from '/js/auth.js';
+      import { createSandboxRunner } from '/lib/sandbox/runner.js';
+      import { saveDraft, publishGame, loadDraft } from '/js/studio.js';
+
+      const user = requireAuth();
+      let editorInstance;
+
+      // Monaco boot
+      window.require(['vs/editor/editor.main'], function() {
+        editorInstance = monaco.editor.create(document.getElementById('editor'), {
+          value: loadDraft(user.id) || `export default function start(api){ api.text(10,10,"Hi ${user.username}!"); }`,
+          language: 'javascript',
+          theme: 'vs-dark',
+          automaticLayout: true,
+        });
+        editorInstance.onDidChangeModelContent(() => saveDraft(user.id, editorInstance.getValue()));
+      });
+
+      const iframe = document.getElementById('preview');
+      const runner = createSandboxRunner(iframe);
+
+      document.getElementById('run').onclick = async () => {
+        const code = editorInstance.getValue();
+        await runner.run(code);
+      };
+
+      document.getElementById('publish').onclick = async () => {
+        const title = prompt('Game title?');
+        if (!title) return;
+        const code = editorInstance.getValue();
+        const id = await publishGame({ title, code, authorId: user.id });
+        alert('Published! Open: ' + `/game.html?id=${encodeURIComponent(id)}`);
+      };
+    </script>
+  </body>
+</html>

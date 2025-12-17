@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>BlockForge – Login</title>
+    <link rel="stylesheet" href="/assets/css/theme.css"/>
+  </head>
+  <body>
+    <main class="centered">
+      <h1>BlockForge</h1>
+      <form id="loginForm">
+        <label>Username <input name="username" required minlength="3"/></label>
+        <button type="submit">Log in</button>
+      </form>
+    </main>
+    <script type="module">
+      import { setUser, getUser } from '/js/auth.js';
+      const existing = getUser();
+      if (existing) window.location.href = '/home.html';
+
+      const form = document.getElementById('loginForm');
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = new FormData(form).get('username').trim();
+        const user = {
+          id: 'u_' + Math.random().toString(36).slice(2),
+          username,
+          avatarUrl: `/assets/img/default-avatar.png`,
+        };
+        setUser(user);
+        window.location.href = '/home.html';
+      });
+    </script>
+  </body>
+</html>
